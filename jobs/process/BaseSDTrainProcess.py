@@ -224,59 +224,68 @@ class BaseSDTrainProcess(BaseTrainProcess):
             for i in range(len(sample_config.prompts)):
                 test_image_paths.append(test_image_path_list[i % len(test_image_path_list)])
 
-        for i in range(len(sample_config.prompts)):
-            if sample_config.walk_seed:
-                current_seed = start_seed + i
+        # Get resolutions
+        if hasattr(sample_config, 'resolutions'):
+            resolutions = sample_config.resolutions
+        else:
+            resolutions = [[sample_config.width, sample_config.height]]
 
-            step_num = ''
-            if step is not None:
-                # zero-pad 9 digits
-                step_num = f"_{str(step).zfill(9)}"
+        for res in resolutions:
+            width, height = res
+            for i in range(len(sample_config.prompts)):
+                if sample_config.walk_seed:
+                    current_seed = start_seed + i
 
-            filename = f"[time]_{step_num}_[count].{self.sample_config.ext}"
+                step_num = ''
+                if step is not None:
+                    # zero-pad 9 digits
+                    step_num = f"_{str(step).zfill(9)}"
 
-            output_path = os.path.join(sample_folder, filename)
+                # Modify filename to include resolution
+                filename = f"[time]_{step_num}_{width}x{height}_[count].{self.sample_config.ext}"
 
-            prompt = sample_config.prompts[i]
+                output_path = os.path.join(sample_folder, filename)
 
-            # add embedding if there is one
-            # note: diffusers will automatically expand the trigger to the number of added tokens
-            # ie test123 will become test123 test123_1 test123_2 etc. Do not add this yourself here
-            if self.embedding is not None:
-                prompt = self.embedding.inject_embedding_to_prompt(
-                    prompt, expand_token=True, add_if_not_present=False
-                )
-            if self.adapter is not None and isinstance(self.adapter, ClipVisionAdapter):
-                prompt = self.adapter.inject_trigger_into_prompt(
-                    prompt, expand_token=True, add_if_not_present=False
-                )
-            if self.trigger_word is not None:
-                prompt = self.sd.inject_trigger_into_prompt(
-                    prompt, self.trigger_word, add_if_not_present=False
-                )
+                prompt = sample_config.prompts[i]
 
-            extra_args = {}
-            if self.adapter_config is not None and self.adapter_config.test_img_path is not None:
-                extra_args['adapter_image_path'] = test_image_paths[i]
+                # add embedding if there is one
+                # note: diffusers will automatically expand the trigger to the number of added tokens
+                # ie test123 will become test123 test123_1 test123_2 etc. Do not add this yourself here
+                if self.embedding is not None:
+                    prompt = self.embedding.inject_embedding_to_prompt(
+                        prompt, expand_token=True, add_if_not_present=False
+                    )
+                if self.adapter is not None and isinstance(self.adapter, ClipVisionAdapter):
+                    prompt = self.adapter.inject_trigger_into_prompt(
+                        prompt, expand_token=True, add_if_not_present=False
+                    )
+                if self.trigger_word is not None:
+                    prompt = self.sd.inject_trigger_into_prompt(
+                        prompt, self.trigger_word, add_if_not_present=False
+                    )
 
-            gen_img_config_list.append(GenerateImageConfig(
-                prompt=prompt,  # it will autoparse the prompt
-                width=sample_config.width,
-                height=sample_config.height,
-                negative_prompt=sample_config.neg,
-                seed=current_seed,
-                guidance_scale=sample_config.guidance_scale,
-                guidance_rescale=sample_config.guidance_rescale,
-                num_inference_steps=sample_config.sample_steps,
-                network_multiplier=sample_config.network_multiplier,
-                output_path=output_path,
-                output_ext=sample_config.ext,
-                adapter_conditioning_scale=sample_config.adapter_conditioning_scale,
-                refiner_start_at=sample_config.refiner_start_at,
-                extra_values=sample_config.extra_values,
-                logger=self.logger,
-                **extra_args
-            ))
+                extra_args = {}
+                if self.adapter_config is not None and self.adapter_config.test_img_path is not None:
+                    extra_args['adapter_image_path'] = test_image_paths[i]
+
+                gen_img_config_list.append(GenerateImageConfig(
+                    prompt=prompt,  # it will autoparse the prompt
+                    width=width,
+                    height=height,
+                    negative_prompt=sample_config.neg,
+                    seed=current_seed,
+                    guidance_scale=sample_config.guidance_scale,
+                    guidance_rescale=sample_config.guidance_rescale,
+                    num_inference_steps=sample_config.sample_steps,
+                    network_multiplier=sample_config.network_multiplier,
+                    output_path=output_path,
+                    output_ext=sample_config.ext,
+                    adapter_conditioning_scale=sample_config.adapter_conditioning_scale,
+                    refiner_start_at=sample_config.refiner_start_at,
+                    extra_values=sample_config.extra_values,
+                    logger=self.logger,
+                    **extra_args
+                ))
 
         # post process
         gen_img_config_list = self.post_process_generate_image_config_list(gen_img_config_list)
@@ -288,8 +297,6 @@ class BaseSDTrainProcess(BaseTrainProcess):
         # send to be generated
         self.sd.generate_images(gen_img_config_list, sampler=sample_config.sampler)
 
-        if self.ema is not None:
-            self.ema.train()
 
     def update_training_metadata(self):
         o_dict = OrderedDict({
