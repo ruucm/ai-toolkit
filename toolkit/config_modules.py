@@ -58,6 +58,10 @@ class SampleConfig:
                                            0.5)  # step to start using refiner on sample if it exists
         self.extra_values = kwargs.get('extra_values', [])
 
+        # Add the resolutions attribute
+        self.resolutions: Optional[List[List[int]]] = kwargs.get('resolutions', None)
+
+
 
 class LormModuleSettingsConfig:
     def __init__(self, **kwargs):

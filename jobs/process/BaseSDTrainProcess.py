@@ -230,6 +230,9 @@ class BaseSDTrainProcess(BaseTrainProcess):
         else:
             resolutions = [[sample_config.width, sample_config.height]]
 
+        # print the resolutions
+        self.print(f"Resolutions: {resolutions}")
+
         for res in resolutions:
             width, height = res
             for i in range(len(sample_config.prompts)):
