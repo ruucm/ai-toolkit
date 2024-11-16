@@ -245,7 +245,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
                     step_num = f"_{str(step).zfill(9)}"
 
                 # Modify filename to include resolution
-                filename = f"[time]_{step_num}_{width}x{height}_[count].{self.sample_config.ext}"
+                filename = f"{width}x{height}_{step_num}_[count].{self.sample_config.ext}"
 
                 output_path = os.path.join(sample_folder, filename)
 
