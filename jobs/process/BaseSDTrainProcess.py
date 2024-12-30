@@ -58,6 +58,7 @@ from tqdm import tqdm
 from toolkit.config_modules import SaveConfig, LoggingConfig, SampleConfig, NetworkConfig, TrainConfig, ModelConfig, \
     GenerateImageConfig, EmbeddingConfig, DatasetConfig, preprocess_dataset_raw_config, AdapterConfig, GuidanceConfig
 from toolkit.logging import create_logger
+from toolkit.email_utils import send_training_complete_email
 
 def flush():
     torch.cuda.empty_cache()
@@ -1872,6 +1873,19 @@ class BaseSDTrainProcess(BaseTrainProcess):
         print("")
         self.save()
         self.logger.finish()
+
+        # Save the model
+        self.save()
+        self.logger.finish()
+
+        # Send completion notification
+        recipient_email = os.getenv("NOTIFICATION_RECIPIENT_EMAIL")
+        if recipient_email:
+            send_training_complete_email(
+                recipient_email=recipient_email,
+                model_name=self.name,
+                training_folder=self.training_folder
+            )
 
         if self.save_config.push_to_hub:
             if("HF_TOKEN" not in os.environ):
