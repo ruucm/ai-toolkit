@@ -34,6 +34,7 @@ from toolkit.lora_special import LoRASpecialNetwork
 from toolkit.lorm import convert_diffusers_unet_to_lorm, count_parameters, print_lorm_extract_details, \
     lorm_ignore_if_contains, lorm_parameter_threshold, LORM_TARGET_REPLACE_MODULE
 from toolkit.lycoris_special import LycorisSpecialNetwork
+from toolkit.models.decorator import Decorator
 from toolkit.network_mixins import Network
 from toolkit.optimizer import get_optimizer
 from toolkit.paths import CONFIG_ROOT
@@ -56,9 +57,11 @@ import gc
 from tqdm import tqdm
 
 from toolkit.config_modules import SaveConfig, LoggingConfig, SampleConfig, NetworkConfig, TrainConfig, ModelConfig, \
-    GenerateImageConfig, EmbeddingConfig, DatasetConfig, preprocess_dataset_raw_config, AdapterConfig, GuidanceConfig
+    GenerateImageConfig, EmbeddingConfig, DatasetConfig, preprocess_dataset_raw_config, AdapterConfig, GuidanceConfig, validate_configs, \
+    DecoratorConfig
 from toolkit.logging import create_logger
 from toolkit.email_utils import send_training_complete_email
+from diffusers import FluxTransformer2DModel
 
 def flush():
     torch.cuda.empty_cache()
@@ -143,6 +146,13 @@ class BaseSDTrainProcess(BaseTrainProcess):
         embedding_raw = self.get_conf('embedding', None)
         if embedding_raw is not None:
             self.embed_config = EmbeddingConfig(**embedding_raw)
+        
+        self.decorator_config: DecoratorConfig = None
+        decorator_raw = self.get_conf('decorator', None)
+        if decorator_raw is not None:
+            if not self.model_config.is_flux:
+                raise ValueError("Decorators are only supported for Flux models currently")
+            self.decorator_config = DecoratorConfig(**decorator_raw)
 
         # t2i adapter
         self.adapter_config = None
@@ -157,6 +167,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
         self.network: Union[Network, None] = None
         self.adapter: Union[T2IAdapter, IPAdapter, ClipVisionAdapter, ReferenceAdapter, CustomAdapter, ControlNetModel, None] = None
         self.embedding: Union[Embedding, None] = None
+        self.decorator: Union[Decorator, None] = None
 
         is_training_adapter = self.adapter_config is not None and self.adapter_config.train
 
@@ -174,6 +185,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
             train_lora=self.network_config is not None,
             train_adapter=is_training_adapter,
             train_embedding=self.embed_config is not None,
+            train_decorator=self.decorator_config is not None,
             train_refiner=self.train_config.train_refiner,
             unload_text_encoder=self.train_config.unload_text_encoder,
             require_grads=False  # we ensure them later
@@ -187,6 +199,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
             train_lora=self.network_config is not None,
             train_adapter=is_training_adapter,
             train_embedding=self.embed_config is not None,
+            train_decorator=self.decorator_config is not None,
             train_refiner=self.train_config.train_refiner,
             unload_text_encoder=self.train_config.unload_text_encoder,
             require_grads=True  # We check for grads when getting params
@@ -194,7 +207,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
 
         # fine_tuning here is for training actual SD network, not LoRA, embeddings, etc. it is (Dreambooth, etc)
         self.is_fine_tuning = True
-        if self.network_config is not None or is_training_adapter or self.embed_config is not None:
+        if self.network_config is not None or is_training_adapter or self.embed_config is not None or self.decorator_config is not None:
             self.is_fine_tuning = False
 
         self.named_lora = False
@@ -202,6 +215,8 @@ class BaseSDTrainProcess(BaseTrainProcess):
             self.named_lora = True
         self.snr_gos: Union[LearnableSNRGamma, None] = None
         self.ema: ExponentialMovingAverage = None
+        
+        validate_configs(self.train_config, self.model_config, self.save_config)
 
     def post_process_generate_image_config_list(self, generate_image_config_list: List[GenerateImageConfig]):
         # override in subclass
@@ -476,6 +491,19 @@ class BaseSDTrainProcess(BaseTrainProcess):
                     # replace extension
                     emb_file_path = os.path.splitext(emb_file_path)[0] + ".pt"
                 self.embedding.save(emb_file_path)
+            
+            if self.decorator is not None:
+                dec_filename = f'{self.job.name}{step_num}.safetensors'
+                dec_file_path = os.path.join(self.save_root, dec_filename)
+                decorator_state_dict = self.decorator.state_dict()
+                for key, value in decorator_state_dict.items():
+                    if isinstance(value, torch.Tensor):
+                        decorator_state_dict[key] = value.clone().to('cpu', dtype=get_torch_dtype(self.save_config.dtype))
+                save_file(
+                    decorator_state_dict,
+                    dec_file_path,
+                    metadata=save_meta,
+                )
 
             if self.adapter is not None and self.adapter_config.train:
                 adapter_name = self.job.name
@@ -521,12 +549,17 @@ class BaseSDTrainProcess(BaseTrainProcess):
                     # move it back
                     self.adapter = self.adapter.to(orig_device, dtype=orig_dtype)
                 else:
+                    direct_save = False
+                    if self.adapter_config.train_only_image_encoder:
+                        direct_save = True
+                    if self.adapter_config.type == 'redux':
+                        direct_save = True
                     save_ip_adapter_from_diffusers(
                         state_dict,
                         output_file=file_path,
                         meta=save_meta,
                         dtype=get_torch_dtype(self.save_config.dtype),
-                        direct_save=self.adapter_config.train_only_image_encoder
+                        direct_save=direct_save
                     )
         else:
             if self.save_config.save_format == "diffusers":
@@ -569,7 +602,8 @@ class BaseSDTrainProcess(BaseTrainProcess):
             try:
                 filename = f'optimizer.pt'
                 file_path = os.path.join(self.save_root, filename)
-                torch.save(self.optimizer.state_dict(), file_path)
+                state_dict = self.optimizer.state_dict()
+                torch.save(state_dict, file_path)
             except Exception as e:
                 print(e)
                 print("Could not save optimizer")
@@ -598,9 +632,10 @@ class BaseSDTrainProcess(BaseTrainProcess):
     def hook_before_train_loop(self):
         self.logger.start()
 
-    def ensure_params_requires_grad(self):
-        # get param groups
-        # for group in self.optimizer.param_groups:
+    def ensure_params_requires_grad(self, force=False):
+        if self.train_config.do_paramiter_swapping and not force:
+            # the optimizer will handle this if we are not forcing
+            return
         for group in self.params:
             for param in group['params']:
                 if isinstance(param, torch.nn.Parameter):  # Ensure it's a proper parameter
@@ -946,10 +981,15 @@ class BaseSDTrainProcess(BaseTrainProcess):
                         self.train_config.linear_timesteps2,
                         self.train_config.timestep_type == 'linear',
                     ])
+                    
+                    timestep_type = 'linear' if linear_timesteps else None
+                    if timestep_type is None:
+                        timestep_type = self.train_config.timestep_type
+                    
                     self.sd.noise_scheduler.set_train_timesteps(
                         num_train_timesteps,
                         device=self.device_torch,
-                        linear=linear_timesteps
+                        timestep_type=timestep_type
                     )
                 else:
                     self.sd.noise_scheduler.set_timesteps(
@@ -1289,6 +1329,24 @@ class BaseSDTrainProcess(BaseTrainProcess):
             torch.backends.cuda.enable_math_sdp(True)
             torch.backends.cuda.enable_flash_sdp(True)
             torch.backends.cuda.enable_mem_efficient_sdp(True)
+        
+        # # check if we have sage and is flux
+        # if self.sd.is_flux:
+        #     # try_to_activate_sage_attn()
+        #     try:
+        #         from sageattention import sageattn
+        #         from toolkit.models.flux_sage_attn import FluxSageAttnProcessor2_0
+        #         model: FluxTransformer2DModel = self.sd.unet
+        #         # enable sage attention on each block
+        #         for block in model.transformer_blocks:
+        #             processor = FluxSageAttnProcessor2_0()
+        #             block.attn.set_processor(processor)
+        #         for block in model.single_transformer_blocks:
+        #             processor = FluxSageAttnProcessor2_0()
+        #             block.attn.set_processor(processor)
+                    
+        #     except ImportError:
+        #         print("sage attention is not installed. Using SDP instead")
 
         if self.train_config.gradient_checkpointing:
             if self.sd.is_flux:
@@ -1489,6 +1547,30 @@ class BaseSDTrainProcess(BaseTrainProcess):
                 })
 
                 flush()
+            
+            if self.decorator_config is not None:
+                self.decorator = Decorator(
+                    num_tokens=self.decorator_config.num_tokens,
+                    token_size=4096 # t5xxl hidden size for flux
+                )
+                latest_save_path = self.get_latest_save_path()
+                # load last saved weights
+                if latest_save_path is not None:
+                    state_dict = load_file(latest_save_path)
+                    self.decorator.load_state_dict(state_dict)
+                    self.load_training_state_from_metadata(path)
+                    
+                params.append({
+                    'params': list(self.decorator.parameters()),
+                    'lr': self.train_config.lr
+                })
+                
+                # give it to the sd network
+                self.sd.decorator = self.decorator
+                self.decorator.to(self.device_torch, dtype=torch.float32)
+                self.decorator.train()
+
+                flush()
 
             if self.adapter_config is not None:
                 self.setup_adapter()
@@ -1550,10 +1632,15 @@ class BaseSDTrainProcess(BaseTrainProcess):
         optimizer_type = self.train_config.optimizer.lower()
         
         # esure params require grad
-        self.ensure_params_requires_grad()
+        self.ensure_params_requires_grad(force=True)
         optimizer = get_optimizer(self.params, optimizer_type, learning_rate=self.train_config.lr,
                                   optimizer_params=self.train_config.optimizer_params)
         self.optimizer = optimizer
+        
+        # set it to do paramiter swapping
+        if self.train_config.do_paramiter_swapping:
+            # only works for adafactor, but it should have thrown an error prior to this otherwise
+            self.optimizer.enable_paramiter_swapping(self.train_config.paramiter_swapping_factor)
 
         # check if it exists
         optimizer_state_filename = f'optimizer.pt'
@@ -1659,7 +1746,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
         # torch.compile(self.sd.unet, dynamic=True)
 
         # make sure all params require grad
-        self.ensure_params_requires_grad()
+        self.ensure_params_requires_grad(force=True)
 
 
         ###################################################################
@@ -1670,6 +1757,8 @@ class BaseSDTrainProcess(BaseTrainProcess):
         start_step_num = self.step_num
         did_first_flush = False
         for step in range(start_step_num, self.train_config.steps):
+            if self.train_config.do_paramiter_swapping:
+                self.optimizer.swap_paramiters()
             self.timer.start('train_loop')
             if self.train_config.do_random_cfg:
                 self.train_config.do_cfg = True
@@ -1749,6 +1838,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
 
             # flush()
             ### HOOK ###
+            
             loss_dict = self.hook_train_loop(batch_list)
             self.timer.stop('train_loop')
             if not did_first_flush:
@@ -1762,7 +1852,9 @@ class BaseSDTrainProcess(BaseTrainProcess):
             with torch.no_grad():
                 # torch.cuda.empty_cache()
                 # if optimizer has get_lrs method, then use it
-                if hasattr(optimizer, 'get_learning_rates'):
+                if hasattr(optimizer, 'get_avg_learning_rate'):
+                    learning_rate = optimizer.get_avg_learning_rate()
+                elif hasattr(optimizer, 'get_learning_rates'):
                     learning_rate = optimizer.get_learning_rates()[0]
                 elif self.train_config.optimizer.lower().startswith('dadaptation') or \
                         self.train_config.optimizer.lower().startswith('prodigy'):
