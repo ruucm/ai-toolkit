@@ -287,26 +287,46 @@ class BaseSDTrainProcess(BaseTrainProcess):
 
                 prompt = sample_config.prompts[i]
 
-            gen_img_config_list.append(GenerateImageConfig(
-                prompt=prompt,  # it will autoparse the prompt
-                width=sample_config.width,
-                height=sample_config.height,
-                negative_prompt=sample_config.neg,
-                seed=current_seed,
-                guidance_scale=sample_config.guidance_scale,
-                guidance_rescale=sample_config.guidance_rescale,
-                num_inference_steps=sample_config.sample_steps,
-                network_multiplier=sample_config.network_multiplier,
-                output_path=output_path,
-                output_ext=sample_config.ext,
-                adapter_conditioning_scale=sample_config.adapter_conditioning_scale,
-                refiner_start_at=sample_config.refiner_start_at,
-                extra_values=sample_config.extra_values,
-                logger=self.logger,
-                num_frames=sample_config.num_frames,
-                fps=sample_config.fps,
-                **extra_args
-            ))
+                # add embedding if there is one
+                # note: diffusers will automatically expand the trigger to the number of added tokens
+                # ie test123 will become test123 test123_1 test123_2 etc. Do not add this yourself here
+                if self.embedding is not None:
+                    prompt = self.embedding.inject_embedding_to_prompt(
+                        prompt, expand_token=True, add_if_not_present=False
+                    )
+                if self.adapter is not None and isinstance(self.adapter, ClipVisionAdapter):
+                    prompt = self.adapter.inject_trigger_into_prompt(
+                        prompt, expand_token=True, add_if_not_present=False
+                    )
+                if self.trigger_word is not None:
+                    prompt = self.sd.inject_trigger_into_prompt(
+                        prompt, self.trigger_word, add_if_not_present=False
+                    )
+
+                extra_args = {}
+                if self.adapter_config is not None and self.adapter_config.test_img_path is not None:
+                    extra_args['adapter_image_path'] = test_image_paths[i]
+
+                gen_img_config_list.append(GenerateImageConfig(
+                    prompt=prompt,  # it will autoparse the prompt
+                    width=width,
+                    height=height,
+                    negative_prompt=sample_config.neg,
+                    seed=current_seed,
+                    guidance_scale=sample_config.guidance_scale,
+                    guidance_rescale=sample_config.guidance_rescale,
+                    num_inference_steps=sample_config.sample_steps,
+                    network_multiplier=sample_config.network_multiplier,
+                    output_path=output_path,
+                    output_ext=sample_config.ext,
+                    adapter_conditioning_scale=sample_config.adapter_conditioning_scale,
+                    refiner_start_at=sample_config.refiner_start_at,
+                    extra_values=sample_config.extra_values,
+                    logger=self.logger,
+                    num_frames=sample_config.num_frames,
+                    fps=sample_config.fps,
+                    **extra_args
+                ))
 
         # post process
         gen_img_config_list = self.post_process_generate_image_config_list(gen_img_config_list)
@@ -2147,6 +2167,19 @@ class BaseSDTrainProcess(BaseTrainProcess):
             self.save()
             self.logger.finish()
         self.accelerator.end_training()
+
+        # Save the model
+        self.save()
+        self.logger.finish()
+
+        # Send completion notification
+        recipient_email = os.getenv("NOTIFICATION_RECIPIENT_EMAIL")
+        if recipient_email:
+            send_training_complete_email(
+                recipient_email=recipient_email,
+                model_name=self.name,
+                training_folder=self.training_folder
+            )
 
         if self.accelerator.is_main_process:
             # push to hub
