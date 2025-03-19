@@ -1,21 +1,28 @@
 # AI Toolkit by Ostris
 
-## IMPORTANT NOTE - READ THIS
-This is my research repo. I do a lot of experiments in it and it is possible that I will break things.
-If something breaks, checkout an earlier commit. This repo can train a lot of things, and it is
-hard to keep up with all of them.
+## Support My Work
 
-## Support my work
+If you enjoy my work, or use it for commercial purposes, please consider sponsoring me so I can continue to maintain it. Every bit helps! 
 
-<a href="https://glif.app" target="_blank">
-<img alt="glif.app" src="https://raw.githubusercontent.com/ostris/ai-toolkit/main/assets/glif.svg?v=1" width="256" height="auto">
-</a>
+[Become a sponsor on GitHub](https://github.com/orgs/ostris) or [support me on Patreon](https://www.patreon.com/ostris).
+
+Thank you to all my current supporters!
+
+_Last updated: 2025-03-13_
+
+### GitHub Sponsors
+
+<a href="https://github.com/replicate" title="Replicate"><img src="https://avatars.githubusercontent.com/u/60410876?v=4" width="50" height="50" alt="Replicate" style="border-radius:50%"></a> <a href="https://github.com/weights-ai" title="Weights"><img src="https://avatars.githubusercontent.com/u/185568492?v=4" width="50" height="50" alt="Weights" style="border-radius:50%"></a> 
+
+### Patreon Supporters
+
+<a href="None" title="Abraham Irawan"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/60995694/92e0e8f336eb4a5bb8d99b940247d1d1/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=pj6Tm8XRdpGJcAEdnCakqYSNiSjoAYjvZescX7d0ic0%3D" width="50" height="50" alt="Abraham Irawan" style="border-radius:50%"></a> <a href="None" title="Al H"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/570742/4ceb33453a5a4745b430a216aba9280f/eyJ3IjoyMDB9/1.jpg?token-time=2145916800&token-hash=wUzsI5cO5Evp2ukIGdSgBbvKeYgv5LSOQMa6Br33Rrs%3D" width="50" height="50" alt="Al H" style="border-radius:50%"></a> <a href="None" title="Armin Behjati"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/93348210/5c650f32a0bc481d80900d2674528777/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=PpXK9B_iy288annlNdLOexhiQHbTftPEDeCh-sTQ2KA%3D" width="50" height="50" alt="Armin Behjati" style="border-radius:50%"></a> <a href="None" title="Bharat Prabhakar"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/134129880/680c7e14cd1a4d1a9face921fb010f88/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=vNKojv67krNqx7gdpKBX1R_stX2TkMRYvRc0xZrbY6s%3D" width="50" height="50" alt="Bharat Prabhakar" style="border-radius:50%"></a> <a href="None" title="clement Delangue"><img src="https://c8.patreon.com/3/200/33158543" width="50" height="50" alt="clement Delangue" style="border-radius:50%"></a> <a href="None" title="Cosmosis"><img src="https://c8.patreon.com/3/200/70218846" width="50" height="50" alt="Cosmosis" style="border-radius:50%"></a> <a href="None" title="David Garrido"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/27288932/6c35d2d961ee4e14a7a368c990791315/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=dpFFssZXZM_KZMKQhl3uDwwusdFw1c_v9x_ChJU7_zc%3D" width="50" height="50" alt="David Garrido" style="border-radius:50%"></a> <a href="None" title="Doron Adler"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/82763/f99cc484361d4b9d94fe4f0814ada303/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=BpwC020pR3TRZ4r0RSCiSIOh-jmatkrpy1h2XU4sGa4%3D" width="50" height="50" alt="Doron Adler" style="border-radius:50%"></a> <a href="None" title="Eli Slugworth"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/54890369/45cea21d82974c78bf43956de7fb0e12/eyJ3IjoyMDB9/2.jpeg?token-time=2145916800&token-hash=IK6OT6UpusHgdaC4y8IhK5XxXiP5TuLy3vjvgL77Fho%3D" width="50" height="50" alt="Eli Slugworth" style="border-radius:50%"></a> <a href="None" title="EmmanuelMr18"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/98811435/3a3632d1795b4c2b9f8f0270f2f6a650/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=93w8RMxwXlcM4X74t03u6P5_SrKvlm1IpjnD2SzVpJk%3D" width="50" height="50" alt="EmmanuelMr18" style="border-radius:50%"></a> <a href="None" title="Gili Ben Shahar"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/83054970/13de6cb103ad41a5841edf549e66cd51/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=wU_Eke9VYcfI40FAQvdEV84Xspqlo5VSiafLqhg_FOE%3D" width="50" height="50" alt="Gili Ben Shahar" style="border-radius:50%"></a> <a href="None" title="HestoySeghuro ."><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/30931983/54ab4e4ceab946e79a6418d205f9ed51/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=LBmsSsMQZhO6yRZ_YyRwTgE6a7BVWrGNsAVveLXHXR0%3D" width="50" height="50" alt="HestoySeghuro ." style="border-radius:50%"></a> <a href="None" title="Jack Blakely"><img src="https://c8.patreon.com/3/200/4105384" width="50" height="50" alt="Jack Blakely" style="border-radius:50%"></a> <a href="None" title="Jack English"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/45562978/0de33cf52ec642ae8a2f612cddec4ca6/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=hSAvaD4phiLcF0pvX7FP0juI5NQWCon-_TZSNpJzQJg%3D" width="50" height="50" alt="Jack English" style="border-radius:50%"></a> <a href="None" title="Jason"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/150257013/0e9e333d30294eef9f4d6821166966d8/eyJ3IjoyMDB9/2.png?token-time=2145916800&token-hash=hPH_rp5L5OJ9ZMS1wZfpVXDB4lRv2GHpV6r8Jmbmqww%3D" width="50" height="50" alt="Jason" style="border-radius:50%"></a> <a href="None" title="Jean-Tristan Marin"><img src="https://c8.patreon.com/3/200/27791680" width="50" height="50" alt="Jean-Tristan Marin" style="border-radius:50%"></a> <a href="None" title="Jodh Singh"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/131773947/eda3405aa582437db4582fce908c8739/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=S4Bh0sMqTNmJlo3uRr7co5d_kxvBjITemDTfi_1KrCA%3D" width="50" height="50" alt="Jodh Singh" style="border-radius:50%"></a> <a href="None" title="John Dopamine"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/103077711/bb215761cc004e80bd9cec7d4bcd636d/eyJ3IjoyMDB9/2.jpeg?token-time=2145916800&token-hash=zvtBie29rRTKTXvAA2KhOI-l3mSMk9xxr-mg_CksLtc%3D" width="50" height="50" alt="John Dopamine" style="border-radius:50%"></a> <a href="None" title="Joseph Rocca"><img src="https://c8.patreon.com/3/200/93304" width="50" height="50" alt="Joseph Rocca" style="border-radius:50%"></a> <a href="None" title="Kasım Açıkbaş"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/31471379/0a887513ee314a1c86d0b6f8792e9795/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=DJMZs3rDlS0fCM_ahm95FAbjleM_L0gsO9qAPzqd0nA%3D" width="50" height="50" alt="Kasım Açıkbaş" style="border-radius:50%"></a> <a href="None" title="Kristjan Retter"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/152118848/3b15a43d71714552b5ed1c9f84e66adf/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=IEKE18CBHVZ3k-08UD7Dkb7HbiFHb84W0FATdLMI0Dg%3D" width="50" height="50" alt="Kristjan Retter" style="border-radius:50%"></a> <a href="None" title="Maciej Popławski"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/24458495/7d79412e3b994ae5afb3cb7804be85ee/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=WJFgCkwp3_vMdDeCxK9k6CSsBnELp7UcmEGDYgOV07w%3D" width="50" height="50" alt="Maciej Popławski" style="border-radius:50%"></a> <a href="None" title="Michael Levine"><img src="https://c8.patreon.com/3/200/22809690" width="50" height="50" alt="Michael Levine" style="border-radius:50%"></a> <a href="None" title="Miguel Lara"><img src="https://c8.patreon.com/3/200/83319230" width="50" height="50" alt="Miguel Lara" style="border-radius:50%"></a> <a href="None" title="Misch Strotz"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/8654302/b0f5ebedc62a47c4b56222693e1254e9/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=lpeicIh1_S-3Ji3W27gyiRB7iXurp8Bx8HAzDHftOuo%3D" width="50" height="50" alt="Misch Strotz" style="border-radius:50%"></a> <a href="None" title="Mohamed Oumoumad"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/2298192/1228b69bd7d7481baf3103315183250d/eyJ3IjoyMDB9/1.jpg?token-time=2145916800&token-hash=1B7dbXy_gAcPT9WXBesLhs7z_9APiz2k1Wx4Vml_-8Q%3D" width="50" height="50" alt="Mohamed Oumoumad" style="border-radius:50%"></a> <a href="None" title="Noctre"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/99036356/7ae9c4d80e604e739b68cca12ee2ed01/eyJ3IjoyMDB9/3.png?token-time=2145916800&token-hash=zK0dHe6A937WtNlrGdefoXFTPPzHUCfn__23HP8-Ui0%3D" width="50" height="50" alt="Noctre" style="border-radius:50%"></a> <a href="None" title="Patron"><img src="https://c8.patreon.com/3/200/8449560" width="50" height="50" alt="Patron" style="border-radius:50%"></a> <a href="None" title="Paul Fidika"><img src="https://c8.patreon.com/3/200/24440789" width="50" height="50" alt="Paul Fidika" style="border-radius:50%"></a> <a href="None" title="Plaidam"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/338551/e8f257d8d3dd46c38272b391a5785948/eyJ3IjoyMDB9/1.jpg?token-time=2145916800&token-hash=GLom1rGgOZjBeO7I1OnjiIgWmjl6PO9ZjBB8YTvc7AM%3D" width="50" height="50" alt="Plaidam" style="border-radius:50%"></a> <a href="None" title="Prasanth Veerina"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/162524101/81a72689c3754ac5b9e38612ce5ce914/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=3XLSlLFCWAQ-0wd2_vZMikyotdQNSzKOjoyeoJiZEw0%3D" width="50" height="50" alt="Prasanth Veerina" style="border-radius:50%"></a> <a href="None" title="Razvan Grigore"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/156382802/a547e1a8952144ba94f301b10ea37f7a/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=4DoecSYwQGqf6LgYUCHKcEiKg2p3Rj_3BmenPkH3EK8%3D" width="50" height="50" alt="Razvan Grigore" style="border-radius:50%"></a> <a href="None" title="Steve Hanff"><img src="https://c8.patreon.com/3/200/548524" width="50" height="50" alt="Steve Hanff" style="border-radius:50%"></a> <a href="None" title="Steven Simmons"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/163426977/fc3941c79e894fef985d9f5440255313/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=TjwllfKCd_Ftt1C2wFYdcOdJZxyuPaRpEbKjrfzk0Zw%3D" width="50" height="50" alt="Steven Simmons" style="border-radius:50%"></a> <a href="None" title="Sören "><img src="https://c8.patreon.com/3/200/4541423" width="50" height="50" alt="Sören " style="border-radius:50%"></a> <a href="None" title="The Local Lab"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/141098579/1a9f0a1249d447a7a0df718a57343912/eyJ3IjoyMDB9/2.png?token-time=2145916800&token-hash=Rd_AjZGhMATVkZDf8E95ILc0n93gvvFWe1Ig0_dxwf4%3D" width="50" height="50" alt="The Local Lab" style="border-radius:50%"></a> <a href="None" title="Trent Hunter"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/31950857/c567dc648f6144be9f6234946df05da2/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=3Vx4R1eOfD4X_ZPPd40MsZ-3lyknLM35XmaHRELnWjM%3D" width="50" height="50" alt="Trent Hunter" style="border-radius:50%"></a> <a href="None" title="Un Defined"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/155963250/6f8fd7075c3b4247bfeb054ba49172d6/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=twmKs4mADF_h7bKh5jBuigYVScMeaeHv2pEPin9K0Dg%3D" width="50" height="50" alt="Un Defined" style="border-radius:50%"></a> <a href="None" title="Vladimir Sotnikov"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/161471720/dd330b4036d44a5985ed5985c12a5def/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=qkRvrEc5gLPxaXxLvcvbYv1W1lcmOoTwhj4A9Cq5BxQ%3D" width="50" height="50" alt="Vladimir Sotnikov" style="border-radius:50%"></a> <a href="None" title="Wesley Reitzfeld"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/110407414/30f9e9d88ef945ddb0f47fd23a8cbac2/eyJ3IjoyMDB9/1.jpeg?token-time=2145916800&token-hash=QQRWOkMyOfDBERHn4O8N2wMB32zeiIEsydVTbSNUw-I%3D" width="50" height="50" alt="Wesley Reitzfeld" style="border-radius:50%"></a> <a href="None" title="Zoltán-Csaba Nyiró"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/162398691/89d78d89eecb4d6b981ce8c3c6a3d4b8/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=SWhI-0jGpY6Nc_bUQeXz4pa9DRURi9VnnnJ3Mxjg1po%3D" width="50" height="50" alt="Zoltán-Csaba Nyiró" style="border-radius:50%"></a> <a href="None" title="Алексей Наумов"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/26019082/6ba968129e284c869069b261c875ae02/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=Jz-Kk9l8RIvGMNcaGXuN8_vaY3G435lFmtJtFZA3OCs%3D" width="50" height="50" alt="Алексей Наумов" style="border-radius:50%"></a> <a href="None" title="עומר מכלוף"><img src="https://c10.patreonusercontent.com/4/patreon-media/p/user/97985240/3d1d0e6905d045aba713e8132cab4a30/eyJ3IjoyMDB9/1.png?token-time=2145916800&token-hash=pG3X2m-py2lRYI2aoJiXI47_4ArD78ZHdSm6jCAHA_w%3D" width="50" height="50" alt="עומר מכלוף" style="border-radius:50%"></a> 
 
 
-My work on this project would not be possible without the amazing support of [Glif](https://glif.app/) and everyone on the 
-team. If you want to support me, support Glif. [Join the site](https://glif.app/), 
-[Join us on Discord](https://discord.com/invite/nuR9zZ2nsh), [follow us on Twitter](https://x.com/heyglif)
-and come make some cool stuff with us
+---
+
+
+
 
 ## Installation
 
@@ -24,7 +31,6 @@ Requirements:
 - Nvidia GPU with enough ram to do what you need
 - python venv
 - git
-
 
 
 Linux:
@@ -47,9 +53,46 @@ cd ai-toolkit
 git submodule update --init --recursive
 python -m venv venv
 .\venv\Scripts\activate
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -r requirements.txt
 ```
+
+
+# AI Toolkit UI
+
+<img src="https://ostris.com/wp-content/uploads/2025/02/toolkit-ui.jpg" alt="AI Toolkit UI" width="100%">
+
+The AI Toolkit UI is a web interface for the AI Toolkit. It allows you to easily start, stop, and monitor jobs. It also allows you to easily train models with a few clicks. It is still in early beta and will likely have bugs and frequent breaking changes. It is currently only tested on linux for now.
+
+
+WARNING: The UI is not secure and should not be exposed to the internet. It is only meant to be run locally or on a server that does not have ports exposed. Adding additional security is on the roadmap.
+
+## Installing the UI
+
+Requirements:
+- Node.js > 18
+
+You will need to do this with every update as well.
+
+```bash
+cd ui
+npm install
+npm run build
+npm run update_db
+```
+
+## Running the UI
+
+Make sure you built it as shown above. The UI does not need to be kept running for the jobs to run. It is only needed to start/stop/monitor jobs.
+
+```bash
+cd ui
+npm run start
+```
+
+You can now access the UI at `http://localhost:8675` or `http://<your-ip>:8675` if you are running it on a server.
+
+
 
 ## FLUX.1 Training
 
@@ -284,185 +327,16 @@ You can also exclude layers by their names by using `ignore_if_contains` network
 `ignore_if_contains` takes priority over `only_if_contains`. So if a weight is covered by both,
 if will be ignored.
 
----
+## LoKr Training
 
-## EVERYTHING BELOW THIS LINE IS OUTDATED 
+To learn more about LoKr, read more about it at [KohakuBlueleaf/LyCORIS](https://github.com/KohakuBlueleaf/LyCORIS/blob/main/docs/Guidelines.md). To train a LoKr model, you can adjust the network type in the config file like so:
 
-It may still work like that, but I have not tested it in a while.
-
----
-
-### Batch Image Generation
-
-A image generator that can take frompts from a config file or form a txt file and generate them to a 
-folder. I mainly needed this for an SDXL test I am doing but added some polish to it so it can be used
-for generat batch image generation.
-It all runs off a config file, which you can find an example of in  `config/examples/generate.example.yaml`.
-Mere info is in the comments in the example
-
----
-
-### LoRA (lierla), LoCON (LyCORIS) extractor
-
-It is based on the extractor in the [LyCORIS](https://github.com/KohakuBlueleaf/LyCORIS) tool, but adding some QOL features
-and LoRA (lierla) support. It can do multiple types of extractions in one run.
-It all runs off a config file, which you can find an example of in  `config/examples/extract.example.yml`.
-Just copy that file, into the `config` folder, and rename it to `whatever_you_want.yml`.
-Then you can edit the file to your liking. and call it like so:
-
-```bash
-python3 run.py config/whatever_you_want.yml
+```yaml
+      network:
+        type: "lokr"
+        lokr_full_rank: true
+        lokr_factor: 8
 ```
 
-You can also put a full path to a config file, if you want to keep it somewhere else.
-
-```bash
-python3 run.py "/home/user/whatever_you_want.yml"
-```
-
-More notes on how it works are available in the example config file itself. LoRA and LoCON both support
-extractions of 'fixed', 'threshold', 'ratio', 'quantile'. I'll update what these do and mean later.
-Most people used fixed, which is traditional fixed dimension extraction.
-
-`process` is an array of different processes to run. You can add a few and mix and match. One LoRA, one LyCON, etc.
-
----
-
-### LoRA Rescale
-
-Change `<lora:my_lora:4.6>` to `<lora:my_lora:1.0>` or whatever you want with the same effect. 
-A tool for rescaling a LoRA's weights. Should would with LoCON as well, but I have not tested it.
-It all runs off a config file, which you can find an example of in  `config/examples/mod_lora_scale.yml`.
-Just copy that file, into the `config` folder, and rename it to `whatever_you_want.yml`.
-Then you can edit the file to your liking. and call it like so:
-
-```bash
-python3 run.py config/whatever_you_want.yml
-```
-
-You can also put a full path to a config file, if you want to keep it somewhere else.
-
-```bash
-python3 run.py "/home/user/whatever_you_want.yml"
-```
-
-More notes on how it works are available in the example config file itself. This is useful when making 
-all LoRAs, as the ideal weight is rarely 1.0, but now you can fix that. For sliders, they can have weird scales form -2 to 2
-or even -15 to 15. This will allow you to dile it in so they all have your desired scale
-
----
-
-### LoRA Slider Trainer
-
-<a target="_blank" href="https://colab.research.google.com/github/ostris/ai-toolkit/blob/main/notebooks/SliderTraining.ipynb">
-  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
-</a>
-
-This is how I train most of the recent sliders I have on Civitai, you can check them out in my [Civitai profile](https://civitai.com/user/Ostris/models).
-It is based off the work by [p1atdev/LECO](https://github.com/p1atdev/LECO) and [rohitgandikota/erasing](https://github.com/rohitgandikota/erasing)
-But has been heavily modified to create sliders rather than erasing concepts. I have a lot more plans on this, but it is
-very functional as is. It is also very easy to use. Just copy the example config file in `config/examples/train_slider.example.yml`
-to the `config` folder and rename it to `whatever_you_want.yml`. Then you can edit the file to your liking. and call it like so:
-
-```bash
-python3 run.py config/whatever_you_want.yml
-```
-
-There is a lot more information in that example file. You can even run the example as is without any modifications to see
-how it works. It will create a slider that turns all animals into dogs(neg) or cats(pos). Just run it like so:
-
-```bash
-python3 run.py config/examples/train_slider.example.yml
-```
-
-And you will be able to see how it works without configuring anything. No datasets are required for this method.
-I will post an better tutorial soon. 
-
----
-
-## Extensions!!
-
-You can now make and share custom extensions. That run within this framework and have all the inbuilt tools
-available to them. I will probably use this as the primary development method going
-forward so I dont keep adding and adding more and more features to this base repo. I will likely migrate a lot
-of the existing functionality as well to make everything modular. There is an example extension in the `extensions`
-folder that shows how to make a model merger extension. All of the code is heavily documented which is hopefully
-enough to get you started. To make an extension, just copy that example and replace all the things you need to.
-
-
-### Model Merger - Example Extension
-It is located in the `extensions` folder. It is a fully finctional model merger that can merge as many models together
-as you want. It is a good example of how to make an extension, but is also a pretty useful feature as well since most
-mergers can only do one model at a time and this one will take as many as you want to feed it. There is an 
-example config file in there, just copy that to your `config` folder and rename it to `whatever_you_want.yml`.
-and use it like any other config file.
-
-## WIP Tools
-
-
-### VAE (Variational Auto Encoder) Trainer
-
-This works, but is not ready for others to use and therefore does not have an example config. 
-I am still working on it. I will update this when it is ready.
-I am adding a lot of features for criteria that I have used in my image enlargement work. A Critic (discriminator),
-content loss, style loss, and a few more. If you don't know, the VAE
-for stable diffusion (yes even the MSE one, and SDXL), are horrible at smaller faces and it holds SD back. I will fix this.
-I'll post more about this later with better examples later, but here is a quick test of a run through with various VAEs.
-Just went in and out. It is much worse on smaller faces than shown here.
-
-<img src="https://raw.githubusercontent.com/ostris/ai-toolkit/main/assets/VAE_test1.jpg" width="768" height="auto"> 
-
----
-
-## TODO
-- [X] Add proper regs on sliders
-- [X] Add SDXL support (base model only for now)
-- [ ] Add plain erasing
-- [ ] Make Textual inversion network trainer (network that spits out TI embeddings)
-
----
-
-## Change Log
-
-#### 2023-08-05
- - Huge memory rework and slider rework. Slider training is better thant ever with no more
-ram spikes. I also made it so all 4 parts of the slider algorythm run in one batch so they share gradient
-accumulation. This makes it much faster and more stable. 
- - Updated the example config to be something more practical and more updated to current methods. It is now
-a detail slide and shows how to train one without a subject. 512x512 slider training for 1.5 should work on 
-6GB gpu now. Will test soon to verify. 
-
-
-#### 2021-10-20
- - Windows support bug fixes
- - Extensions! Added functionality to make and share custom extensions for training, merging, whatever.
-check out the example in the `extensions` folder. Read more about that above.
- - Model Merging, provided via the example extension.
-
-#### 2023-08-03
-Another big refactor to make SD more modular.
-
-Made batch image generation script
-
-#### 2023-08-01
-Major changes and update. New LoRA rescale tool, look above for details. Added better metadata so
-Automatic1111 knows what the base model is. Added some experiments and a ton of updates. This thing is still unstable
-at the moment, so hopefully there are not breaking changes. 
-
-Unfortunately, I am too lazy to write a proper changelog with all the changes.
-
-I added SDXL training to sliders... but.. it does not work properly. 
-The slider training relies on a model's ability to understand that an unconditional (negative prompt)
-means you do not want that concept in the output. SDXL does not understand this for whatever reason, 
-which makes separating out
-concepts within the model hard. I am sure the community will find a way to fix this 
-over time, but for now, it is not 
-going to work properly. And if any of you are thinking "Could we maybe fix it by adding 1 or 2 more text
-encoders to the model as well as a few more entirely separate diffusion networks?" No. God no. It just needs a little
-training without every experimental new paper added to it. The KISS principal. 
-
-
-#### 2023-07-30
-Added "anchors" to the slider trainer. This allows you to set a prompt that will be used as a 
-regularizer. You can set the network multiplier to force spread consistency at high weights
+Everything else should work the same including layer targeting.
 

@@ -7,8 +7,10 @@ from torch.nn import Parameter
 from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection, T5EncoderModel, CLIPTextModel, \
     CLIPTokenizer, T5Tokenizer
 
+from toolkit.data_transfer_object.data_loader import DataLoaderBatchDTO
 from toolkit.models.clip_fusion import CLIPFusionModule
 from toolkit.models.clip_pre_processor import CLIPImagePreProcessor
+from toolkit.models.control_lora_adapter import ControlLoraAdapter
 from toolkit.models.ilora import InstantLoRAModule
 from toolkit.models.single_value_adapter import SingleValueAdapter
 from toolkit.models.te_adapter import TEAdapter
@@ -29,7 +31,7 @@ from ipadapter.ip_adapter.attention_processor import AttnProcessor, IPAttnProces
     AttnProcessor2_0
 from ipadapter.ip_adapter.ip_adapter import ImageProjModel
 from ipadapter.ip_adapter.resampler import Resampler
-from toolkit.config_modules import AdapterConfig, AdapterTypes
+from toolkit.config_modules import AdapterConfig, AdapterTypes, TrainConfig
 from toolkit.prompt_utils import PromptEmbeds
 import weakref
 
@@ -44,7 +46,7 @@ from transformers import (
     ConvNextModel,
     ConvNextForImageClassification,
     ConvNextImageProcessor,
-    UMT5EncoderModel, LlamaTokenizerFast
+    UMT5EncoderModel, LlamaTokenizerFast, AutoModel, AutoTokenizer, BitsAndBytesConfig
 )
 from toolkit.models.size_agnostic_feature_encoder import SAFEImageProcessor, SAFEVisionModel
 
@@ -52,14 +54,17 @@ from transformers import ViTHybridImageProcessor, ViTHybridForImageClassificatio
 
 from transformers import ViTFeatureExtractor, ViTForImageClassification
 
+from toolkit.models.llm_adapter import LLMAdapter
+
 import torch.nn.functional as F
 
 
 class CustomAdapter(torch.nn.Module):
-    def __init__(self, sd: 'StableDiffusion', adapter_config: 'AdapterConfig'):
+    def __init__(self, sd: 'StableDiffusion', adapter_config: 'AdapterConfig', train_config: 'TrainConfig'):
         super().__init__()
         self.config = adapter_config
         self.sd_ref: weakref.ref = weakref.ref(sd)
+        self.train_config = train_config
         self.device = self.sd_ref().unet.device
         self.image_processor: CLIPImageProcessor = None
         self.input_size = 224
@@ -95,6 +100,7 @@ class CustomAdapter(torch.nn.Module):
         self.vd_adapter: VisionDirectAdapter = None
         self.single_value_adapter: SingleValueAdapter = None
         self.redux_adapter: ReduxImageEncoder = None
+        self.control_lora: ControlLoraAdapter = None
         
         self.conditional_embeds: Optional[torch.Tensor] = None
         self.unconditional_embeds: Optional[torch.Tensor] = None
@@ -123,11 +129,11 @@ class CustomAdapter(torch.nn.Module):
         torch_dtype = get_torch_dtype(self.sd_ref().dtype)
         if self.adapter_type == 'photo_maker':
             sd = self.sd_ref()
-            embed_dim = sd.unet.config['cross_attention_dim']
+            embed_dim = sd.unet_unwrapped.config['cross_attention_dim']
             self.fuse_module = FuseModule(embed_dim)
         elif self.adapter_type == 'clip_fusion':
             sd = self.sd_ref()
-            embed_dim = sd.unet.config['cross_attention_dim']
+            embed_dim = sd.unet_unwrapped.config['cross_attention_dim']
 
             vision_tokens = ((self.vision_encoder.config.image_size // self.vision_encoder.config.patch_size) ** 2)
             if self.config.image_encoder_arch == 'clip':
@@ -198,6 +204,37 @@ class CustomAdapter(torch.nn.Module):
                 raise ValueError(f"unknown text encoder arch: {self.config.text_encoder_arch}")
 
             self.te_adapter = TEAdapter(self, self.sd_ref(), self.te, self.tokenizer)
+        elif self.adapter_type == 'llm_adapter':
+            kwargs = {}
+            if self.config.quantize_llm:
+                bnb_kwargs = {
+                    'load_in_4bit': True,
+                    'bnb_4bit_quant_type': "nf4",
+                    'bnb_4bit_compute_dtype': torch.bfloat16
+                }
+                quantization_config = BitsAndBytesConfig(**bnb_kwargs)
+                kwargs['quantization_config'] = quantization_config
+                kwargs['torch_dtype'] = torch_dtype
+                self.te = AutoModel.from_pretrained(
+                    self.config.text_encoder_path,
+                    **kwargs
+                )
+            else:
+                self.te = AutoModel.from_pretrained(self.config.text_encoder_path).to(
+                    self.sd_ref().unet.device, 
+                    dtype=torch_dtype,
+                )
+            self.te.to = lambda *args, **kwargs: None
+            self.te.eval()
+            self.tokenizer = AutoTokenizer.from_pretrained(self.config.text_encoder_path)
+            self.llm_adapter = LLMAdapter(
+                adapter=self, 
+                sd=self.sd_ref(),
+                llm=self.te,
+                tokenizer=self.tokenizer,
+                num_cloned_blocks=self.config.num_cloned_blocks,
+            )
+            self.llm_adapter.to(self.device, torch_dtype)
         elif self.adapter_type == 'te_augmenter':
             self.te_augmenter = TEAugAdapter(self, self.sd_ref())
         elif self.adapter_type == 'vision_direct':
@@ -207,6 +244,13 @@ class CustomAdapter(torch.nn.Module):
         elif self.adapter_type == 'redux':
             vision_hidden_size = self.vision_encoder.config.hidden_size
             self.redux_adapter = ReduxImageEncoder(vision_hidden_size, 4096, self.device, torch_dtype)
+        elif self.adapter_type == 'control_lora':
+            self.control_lora = ControlLoraAdapter(
+                self,
+                sd=self.sd_ref(),
+                config=self.config,
+                train_config=self.train_config
+            )
         else:
             raise ValueError(f"unknown adapter type: {self.adapter_type}")
 
@@ -238,7 +282,7 @@ class CustomAdapter(torch.nn.Module):
     def setup_clip(self):
         adapter_config = self.config
         sd = self.sd_ref()
-        if self.config.type == "text_encoder" or self.config.type == "single_value":
+        if self.config.type in ["text_encoder", "llm_adapter", "single_value", "control_lora"]:
             return
         if self.config.type == 'photo_maker':
             try:
@@ -258,6 +302,15 @@ class CustomAdapter(torch.nn.Module):
                 adapter_config.image_encoder_path,
                 ignore_mismatched_sizes=True).to(self.device, dtype=get_torch_dtype(self.sd_ref().dtype))
         elif self.config.image_encoder_arch == 'siglip':
+            from transformers import SiglipImageProcessor, SiglipVisionModel
+            try:
+                self.image_processor = SiglipImageProcessor.from_pretrained(adapter_config.image_encoder_path)
+            except EnvironmentError:
+                self.image_processor = SiglipImageProcessor()
+            self.vision_encoder = SiglipVisionModel.from_pretrained(
+                adapter_config.image_encoder_path,
+                ignore_mismatched_sizes=True).to(self.device, dtype=get_torch_dtype(self.sd_ref().dtype))
+        elif self.config.image_encoder_arch == 'siglip2':
             from transformers import SiglipImageProcessor, SiglipVisionModel
             try:
                 self.image_processor = SiglipImageProcessor.from_pretrained(adapter_config.image_encoder_path)
@@ -288,7 +341,7 @@ class CustomAdapter(torch.nn.Module):
             self.vision_encoder = SAFEVisionModel(
                 in_channels=3,
                 num_tokens=self.config.safe_tokens,
-                num_vectors=sd.unet.config['cross_attention_dim'],
+                num_vectors=sd.unet_unwrapped.config['cross_attention_dim'],
                 reducer_channels=self.config.safe_reducer_channels,
                 channels=self.config.safe_channels,
                 downscale_factor=8
@@ -406,6 +459,9 @@ class CustomAdapter(torch.nn.Module):
 
         if 'te_adapter' in state_dict:
             self.te_adapter.load_state_dict(state_dict['te_adapter'], strict=strict)
+            
+        if 'llm_adapter' in state_dict:
+            self.llm_adapter.load_state_dict(state_dict['llm_adapter'], strict=strict)
 
         if 'te_augmenter' in state_dict:
             self.te_augmenter.load_state_dict(state_dict['te_augmenter'], strict=strict)
@@ -436,6 +492,14 @@ class CustomAdapter(torch.nn.Module):
                 for k2, v2 in v.items():
                     new_dict[k + '.' + k2] = v2
             self.redux_adapter.load_state_dict(new_dict, strict=True)
+        
+        if self.adapter_type == 'control_lora':
+            # state dict is seperated. so recombine it
+            new_dict = {}
+            for k, v in state_dict.items():
+                for k2, v2 in v.items():
+                    new_dict[k + '.' + k2] = v2
+            self.control_lora.load_weights(new_dict, strict=strict)
 
         pass
 
@@ -461,6 +525,9 @@ class CustomAdapter(torch.nn.Module):
         elif self.adapter_type == 'text_encoder':
             state_dict["te_adapter"] = self.te_adapter.state_dict()
             return state_dict
+        elif self.adapter_type == 'llm_adapter':
+            state_dict["llm_adapter"] = self.llm_adapter.state_dict()
+            return state_dict
         elif self.adapter_type == 'te_augmenter':
             if self.config.train_image_encoder:
                 state_dict["vision_encoder"] = self.vision_encoder.state_dict()
@@ -484,6 +551,11 @@ class CustomAdapter(torch.nn.Module):
             for k, v in d.items():
                 state_dict[k] = v
             return state_dict
+        elif self.adapter_type == 'control_lora':
+            d = self.control_lora.get_state_dict()
+            for k, v in d.items():
+                state_dict[k] = v
+            return state_dict
         else:
             raise NotImplementedError
 
@@ -493,6 +565,33 @@ class CustomAdapter(torch.nn.Module):
                 self.unconditional_embeds = extra_values.to(self.device, get_torch_dtype(self.sd_ref().dtype))
             else:
                 self.conditional_embeds = extra_values.to(self.device, get_torch_dtype(self.sd_ref().dtype))
+    
+    def condition_noisy_latents(self, latents: torch.Tensor, batch:DataLoaderBatchDTO):
+        with torch.no_grad():
+            if self.adapter_type in ['control_lora']:
+                sd: StableDiffusion = self.sd_ref()
+                control_tensor = batch.control_tensor
+                if control_tensor is None:
+                    # concat random normal noise onto the latents
+                    # check dimension, this is before they are rearranged
+                    # it is latent_model_input = torch.cat([latents, control_image], dim=2) after rearranging
+                    latents = torch.cat((latents, torch.randn_like(latents)), dim=1)
+                    return latents.detach()
+                # it is 0-1 need to convert to -1 to 1
+                control_tensor = control_tensor * 2 - 1
+
+                control_tensor = control_tensor.to(sd.vae_device_torch, dtype=sd.torch_dtype)
+                
+                # if it is not the size of batch.tensor, (bs,ch,h,w) then we need to resize it
+                if control_tensor.shape[2] != batch.tensor.shape[2] or control_tensor.shape[3] != batch.tensor.shape[3]:
+                    control_tensor = F.interpolate(control_tensor, size=(batch.tensor.shape[2], batch.tensor.shape[3]), mode='bicubic')
+                
+                # encode it
+                control_latent = sd.encode_images(control_tensor).to(latents.device, latents.dtype)
+                # concat it onto the latents
+                latents = torch.cat((latents, control_latent), dim=1)
+                return latents.detach()
+            return latents
 
 
     def condition_prompt(
@@ -500,7 +599,7 @@ class CustomAdapter(torch.nn.Module):
             prompt: Union[List[str], str],
             is_unconditional: bool = False,
     ):
-        if self.adapter_type == 'clip_fusion' or self.adapter_type == 'ilora' or self.adapter_type == 'vision_direct' or self.adapter_type == 'redux':
+        if self.adapter_type in ['clip_fusion', 'ilora', 'vision_direct', 'redux', 'control_lora']:
             return prompt
         elif self.adapter_type == 'text_encoder':
             # todo allow for training
@@ -510,6 +609,14 @@ class CustomAdapter(torch.nn.Module):
                     self.unconditional_embeds = self.te_adapter.encode_text(prompt).detach()
                 else:
                     self.conditional_embeds = self.te_adapter.encode_text(prompt).detach()
+        elif self.adapter_type == 'llm_adapter':
+            # todo allow for training
+            with torch.no_grad():
+                # encode and save the embeds
+                if is_unconditional:
+                    self.unconditional_embeds = self.llm_adapter.encode_text(prompt).detach()
+                else:
+                    self.conditional_embeds = self.llm_adapter.encode_text(prompt).detach()
             return prompt
         elif self.adapter_type == 'photo_maker':
             if is_unconditional:
@@ -613,11 +720,20 @@ class CustomAdapter(torch.nn.Module):
             quad_count=4,
             is_generating_samples=False,
     ) -> PromptEmbeds:
-        if self.adapter_type == 'text_encoder' and is_generating_samples:
+        if self.adapter_type == 'text_encoder':
             # replace the prompt embed with ours
             if is_unconditional:
                 return self.unconditional_embeds.clone()
             return self.conditional_embeds.clone()
+        if self.adapter_type == 'llm_adapter':
+            # replace the prompt embed with ours
+            if is_unconditional:
+                prompt_embeds.text_embeds = self.unconditional_embeds.text_embeds.clone()
+                prompt_embeds.attention_mask = self.unconditional_embeds.attention_mask.clone()
+                return prompt_embeds
+            prompt_embeds.text_embeds = self.conditional_embeds.text_embeds.clone()
+            prompt_embeds.attention_mask = self.conditional_embeds.attention_mask.clone()
+            return prompt_embeds
 
         if self.adapter_type == 'ilora':
             return prompt_embeds
@@ -977,6 +1093,8 @@ class CustomAdapter(torch.nn.Module):
         elif self.config.type == 'text_encoder':
             for attn_processor in self.te_adapter.adapter_modules:
                 yield from attn_processor.parameters(recurse)
+        elif self.config.type == 'llm_adapter':
+            yield from self.llm_adapter.parameters(recurse)
         elif self.config.type == 'vision_direct':
             if self.config.train_scaler:
                 # only yield the self.block_scaler = torch.nn.Parameter(torch.tensor([1.0] * num_modules)
@@ -1000,6 +1118,10 @@ class CustomAdapter(torch.nn.Module):
             yield from self.single_value_adapter.parameters(recurse)
         elif self.config.type == 'redux':
             yield from self.redux_adapter.parameters(recurse)
+        elif self.config.type == 'control_lora':
+            param_list = self.control_lora.get_params()
+            for param in param_list:
+                yield param
         else:
             raise NotImplementedError
 

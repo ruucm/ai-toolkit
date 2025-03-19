@@ -272,6 +272,9 @@ class ToolkitModuleMixin:
         # if self.__class__.__name__ == "DoRAModule":
         #     # return dora forward
         #     return self.dora_forward(x, *args, **kwargs)
+        
+        if self.__class__.__name__ == "LokrModule":
+            return self._call_forward(x)
 
         org_forwarded = self.org_forward(x, *args, **kwargs)
 
@@ -488,13 +491,8 @@ class ToolkitNetworkMixin:
                 keymap = new_keymap
 
         return keymap
-
-    def save_weights(
-            self: Network,
-            file, dtype=torch.float16,
-            metadata=None,
-            extra_state_dict: Optional[OrderedDict] = None
-    ):
+    
+    def get_state_dict(self: Network, extra_state_dict=None, dtype=torch.float16):
         keymap = self.get_keymap()
 
         save_keymap = {}
@@ -502,9 +500,6 @@ class ToolkitNetworkMixin:
             for ldm_key, diffusers_key in keymap.items():
                 #  invert them
                 save_keymap[diffusers_key] = ldm_key
-
-        if metadata is not None and len(metadata) == 0:
-            metadata = None
 
         state_dict = self.state_dict()
         save_dict = OrderedDict()
@@ -540,10 +535,35 @@ class ToolkitNetworkMixin:
                 new_save_dict[new_key] = value
 
             save_dict = new_save_dict
+        
+                
+        if self.network_type.lower() == "lokr":
+            new_save_dict = {}
+            for key, value in save_dict.items():
+                # lora_transformer_transformer_blocks_7_attn_to_v.lokr_w1 to lycoris_transformer_blocks_7_attn_to_v.lokr_w1
+                new_key = key
+                new_key = new_key.replace('lora_transformer_', 'lycoris_')
+                new_save_dict[new_key] = value
+
+            save_dict = new_save_dict
+        
+        save_dict = self.base_model_ref().convert_lora_weights_before_save(save_dict)
+        return save_dict
+
+    def save_weights(
+            self: Network,
+            file, dtype=torch.float16,
+            metadata=None,
+            extra_state_dict: Optional[OrderedDict] = None
+    ):
+        save_dict = self.get_state_dict(extra_state_dict=extra_state_dict, dtype=dtype)
+        
+        if metadata is not None and len(metadata) == 0:
+            metadata = None
 
         if metadata is None:
             metadata = OrderedDict()
-        metadata = add_model_hash_to_meta(state_dict, metadata)
+        metadata = add_model_hash_to_meta(save_dict, metadata)
         if os.path.splitext(file)[1] == ".safetensors":
             from safetensors.torch import save_file
             save_file(save_dict, file, metadata)
@@ -565,6 +585,8 @@ class ToolkitNetworkMixin:
         else:
             # probably a state dict
             weights_sd = file
+        
+        weights_sd = self.base_model_ref().convert_lora_weights_before_load(weights_sd)
 
         load_sd = OrderedDict()
         for key, value in weights_sd.items():
@@ -585,6 +607,10 @@ class ToolkitNetworkMixin:
                 load_key = load_key.replace('.', '$$')
                 load_key = load_key.replace('$$lora_down$$', '.lora_down.')
                 load_key = load_key.replace('$$lora_up$$', '.lora_up.')
+            
+            if self.network_type.lower() == "lokr":
+                # lora_transformer_transformer_blocks_7_attn_to_v.lokr_w1 to lycoris_transformer_blocks_7_attn_to_v.lokr_w1
+                load_key = load_key.replace('lycoris_', 'lora_transformer_')
 
             load_sd[load_key] = value
 
@@ -616,9 +642,22 @@ class ToolkitNetworkMixin:
         # without having to set it in every single module every time it changes
         multiplier = self._multiplier
         # get first module
-        first_module = self.get_all_modules()[0]
-        device = first_module.lora_down.weight.device
-        dtype = first_module.lora_down.weight.dtype
+        try:
+            first_module = self.get_all_modules()[0]
+        except IndexError:
+            raise ValueError("There are not any lora modules in this network. Check your config and try again")
+        
+        if hasattr(first_module, 'lora_down'):
+            device = first_module.lora_down.weight.device
+            dtype = first_module.lora_down.weight.dtype
+        elif hasattr(first_module, 'lokr_w1'):
+            device = first_module.lokr_w1.device
+            dtype = first_module.lokr_w1.dtype
+        elif hasattr(first_module, 'lokr_w1_a'):
+            device = first_module.lokr_w1_a.device
+            dtype = first_module.lokr_w1_a.dtype
+        else:
+            raise ValueError("Unknown module type")
         with torch.no_grad():
             tensor_multiplier = None
             if isinstance(multiplier, int) or isinstance(multiplier, float):
