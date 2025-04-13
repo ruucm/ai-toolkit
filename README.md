@@ -66,7 +66,7 @@ git submodule update --init --recursive
 python -m venv venv
 .\venv\Scripts\activate
 pip install -r requirements.txt
-pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128
+pip install --pre -U torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128
 pip install --upgrade setuptools
 ```
 
