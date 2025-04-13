@@ -57,6 +57,19 @@ pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorc
 pip install -r requirements.txt
 ```
 
+Windows: Nvidia 50 Series
+
+```bash
+git clone https://github.com/ostris/ai-toolkit.git
+cd ai-toolkit
+git submodule update --init --recursive
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu128
+pip install --upgrade setuptools
+```
+
 
 # AI Toolkit UI
 
